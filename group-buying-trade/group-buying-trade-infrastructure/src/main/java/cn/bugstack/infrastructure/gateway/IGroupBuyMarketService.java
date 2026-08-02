@@ -1,0 +1,44 @@
+package cn.bugstack.infrastructure.gateway;
+
+import cn.bugstack.infrastructure.gateway.dto.*;
+import cn.bugstack.infrastructure.gateway.response.Response;
+import retrofit2.Call;
+import retrofit2.http.Body;
+import retrofit2.http.POST;
+
+/**
+ * @author Fuzhengwei
+ * @author 王奕杰（业务注释与工程化维护）
+ * 拼团营销
+ * @since 2025-02-06
+ */
+public interface IGroupBuyMarketService {
+
+    /**
+     * 营销锁单
+     *
+     * @param requestDTO 锁单商品信息
+     * @return 锁单结果信息
+     */
+    @POST("api/v1/gbm/trade/lock_market_pay_order")
+    Call<Response<LockMarketPayOrderResponseDTO>> lockMarketPayOrder(@Body LockMarketPayOrderRequestDTO requestDTO);
+
+    /**
+     * 营销结算
+     *
+     * @param requestDTO 结算商品信息
+     * @return 结算结果信息
+     */
+    @POST("api/v1/gbm/trade/settlement_market_pay_order")
+    Call<Response<SettlementMarketPayOrderResponseDTO>> settlementMarketPayOrder(@Body SettlementMarketPayOrderRequestDTO requestDTO);
+
+    /**
+     * 营销拼团退单
+     *
+     * @param requestDTO 退单请求信息
+     * @return 退单结果信息
+     */
+    @POST("api/v1/gbm/trade/refund_market_pay_order")
+    Call<Response<RefundMarketPayOrderResponseDTO>> refundMarketPayOrder(@Body RefundMarketPayOrderRequestDTO requestDTO);
+
+}

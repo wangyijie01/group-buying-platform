@@ -1,0 +1,163 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <filter id="rough">
+      <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="7" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.8"/>
+    </filter>
+    <style>
+      .bg { fill: #fbf3df; }
+      .chalk-blue { fill: none; stroke: #9bd0ec; stroke-width: 18; stroke-linecap: round; opacity: .55; }
+      .chalk-green { fill: none; stroke: #a9d48f; stroke-width: 18; stroke-linecap: round; opacity: .55; }
+      .chalk-yellow { fill: none; stroke: #f4cf70; stroke-width: 15; stroke-linecap: round; opacity: .45; }
+      .box { fill: #fffaf0; stroke: #242424; stroke-width: 4; rx: 18; filter: url(#rough); }
+      .box-soft { fill: #fff7e8; stroke: #242424; stroke-width: 3.5; rx: 16; filter: url(#rough); }
+      .title { font-family: "Comic Sans MS", "Microsoft YaHei", "KaiTi", sans-serif; font-size: 58px; font-weight: 800; fill: #111; }
+      .subtitle { font-family: "Microsoft YaHei", "KaiTi", sans-serif; font-size: 25px; fill: #2b2b2b; }
+      .h2 { font-family: "Microsoft YaHei", "KaiTi", sans-serif; font-size: 34px; font-weight: 800; fill: #111; }
+      .txt { font-family: "Microsoft YaHei", "KaiTi", sans-serif; font-size: 27px; font-weight: 650; fill: #1f1f1f; }
+      .small { font-family: "Microsoft YaHei", "KaiTi", sans-serif; font-size: 21px; font-weight: 560; fill: #2a2a2a; }
+      .tiny { font-family: "Microsoft YaHei", "KaiTi", sans-serif; font-size: 18px; font-weight: 520; fill: #333; }
+      .code { font-family: "Consolas", "Microsoft YaHei", monospace; font-size: 20px; fill: #222; }
+      .tech { font-family: "Microsoft YaHei", "KaiTi", sans-serif; font-size: 24px; font-weight: 700; fill: #1f1f1f; }
+      .line { stroke: #222; stroke-width: 4; fill: none; stroke-linecap: round; stroke-linejoin: round; filter: url(#rough); }
+      .arrow { stroke: #222; stroke-width: 4; fill: none; marker-end: url(#arrow); stroke-linecap: round; filter: url(#rough); }
+      .check { fill: #88c97a; stroke: #222; stroke-width: 2.5; }
+      .pill { fill: #f8df96; stroke: #222; stroke-width: 2.5; rx: 14; filter: url(#rough); }
+      .accent { fill: #b9dff2; stroke: #222; stroke-width: 3; filter: url(#rough); }
+      .pink { fill: #f5b2b2; stroke: #222; stroke-width: 3; filter: url(#rough); }
+      .green { fill: #bfe3aa; stroke: #222; stroke-width: 3; filter: url(#rough); }
+      .yellow { fill: #f3d87d; stroke: #222; stroke-width: 3; filter: url(#rough); }
+      .orange { fill: #f1bd7b; stroke: #222; stroke-width: 3; filter: url(#rough); }
+      .white { fill: #fff; stroke: #222; stroke-width: 3; filter: url(#rough); }
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10" fill="none" stroke="#222" stroke-width="2.5"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1600" height="900"/>
+  <path class="chalk-blue" d="M120 86 C420 38 755 47 1080 66 C1260 74 1395 62 1510 40"/>
+  <path class="chalk-green" d="M70 258 C310 188 480 250 715 202 C940 155 1110 248 1295 198"/>
+  <path class="chalk-yellow" d="M75 162 C230 111 390 142 520 112"/>
+  <path class="chalk-blue" d="M1110 150 C1270 95 1420 114 1518 156"/>
+  <path class="line" d="M235 128 C385 139 570 138 777 131"/>
+  <path class="line" d="M790 132 C980 130 1140 132 1330 127"/>
+
+  <text x="225" y="112" class="title">group-buying-platform：办公下午茶拼单交易平台</text>
+  <text x="445" y="166" class="subtitle">写字楼 / 校园 / 园区场景 · DDD 后端项目 · 拼单、优惠、支付、退款闭环</text>
+
+  <!-- Top flow -->
+  <g transform="translate(150 205)">
+    <circle class="yellow" cx="70" cy="48" r="35"/>
+    <path class="line" d="M58 47 q12 -22 24 0 M48 82 q22 -22 45 0"/>
+    <text class="tiny" x="31" y="105">用户</text>
+    <rect class="accent" x="165" y="20" width="132" height="58" rx="18"/>
+    <text class="small" x="186" y="57">H5 页面</text>
+    <rect class="green" x="385" y="15" width="160" height="66" rx="18"/>
+    <text class="small" x="410" y="55">营销试算</text>
+    <rect class="orange" x="638" y="15" width="160" height="66" rx="18"/>
+    <text class="small" x="663" y="55">交易锁单</text>
+    <rect class="pink" x="888" y="15" width="160" height="66" rx="18"/>
+    <text class="small" x="917" y="55">支付回调</text>
+    <path class="arrow" d="M108 48 L160 48"/>
+    <path class="arrow" d="M300 48 L380 48"/>
+    <path class="arrow" d="M550 48 L633 48"/>
+    <path class="arrow" d="M804 48 L883 48"/>
+    <path class="arrow" d="M956 88 C845 132 654 128 520 86"/>
+  </g>
+
+  <!-- Functions -->
+  <rect class="box" x="65" y="330" width="365" height="305"/>
+  <text x="125" y="380" class="h2">【功能】</text>
+  <g class="txt">
+    <rect class="check" x="100" y="413" width="28" height="28"/><path class="line" d="M106 427 l10 10 l21 -28"/>
+    <text x="150" y="438">下午茶拼单</text>
+    <rect class="check" x="100" y="464" width="28" height="28"/><path class="line" d="M106 478 l10 10 l21 -28"/>
+    <text x="150" y="489">优惠试算 / 锁单</text>
+    <rect class="check" x="100" y="515" width="28" height="28"/><path class="line" d="M106 529 l10 10 l21 -28"/>
+    <text x="150" y="540">人群标签控制</text>
+    <rect class="check" x="100" y="566" width="28" height="28"/><path class="line" d="M106 580 l10 10 l21 -28"/>
+    <text x="150" y="591">支付宝支付 / 退款</text>
+  </g>
+
+  <!-- Tech stack -->
+  <rect class="box" x="468" y="330" width="520" height="305"/>
+  <text x="540" y="380" class="h2">【技术栈】</text>
+  <g transform="translate(510 415)">
+    <circle class="accent" cx="42" cy="42" r="35"/>
+    <text class="small" x="24" y="51">SB</text>
+    <text class="tech" x="95" y="36">后端：Spring Boot</text>
+    <text class="small" x="95" y="69">MyBatis / Maven / DDD</text>
+
+    <ellipse class="white" cx="405" cy="36" rx="36" ry="13"/>
+    <path class="line" d="M369 36 v44 c0 8 72 8 72 0 v-44"/>
+    <ellipse class="white" cx="405" cy="80" rx="36" ry="13"/>
+    <text class="small" x="451" y="47">MySQL</text>
+    <text class="small" x="451" y="78">Redis</text>
+
+    <circle class="yellow" cx="42" cy="142" r="35"/>
+    <path class="line" d="M23 144 h38 M42 123 v38 M30 132 l24 24 M54 132 l-24 24"/>
+    <text class="tech" x="95" y="135">中间件：RabbitMQ + DCC</text>
+    <text class="small" x="95" y="169">消息持久化、重试、配置秒级热更新</text>
+
+  </g>
+
+  <!-- Highlights -->
+  <rect class="box" x="1030" y="310" width="500" height="505"/>
+  <text x="1100" y="360" class="h2">【项目亮点】</text>
+  <g transform="translate(1075 392)">
+    <g>
+      <rect class="yellow" x="0" y="0" width="58" height="58" rx="12"/>
+      <path class="line" d="M12 22 h34 M12 38 h34 M29 8 v44"/>
+      <text class="txt" x="82" y="27">DDD 领域拆分</text>
+      <text class="small" x="82" y="57">活动 / 人群 / 交易三大领域</text>
+    </g>
+    <g transform="translate(0 86)">
+      <rect class="green" x="0" y="0" width="58" height="58" rx="12"/>
+      <path class="line" d="M29 8 v16 M16 30 h26 M18 51 l11 -20 l13 20"/>
+      <text class="txt" x="82" y="27">规则树 + 责任链</text>
+      <text class="small" x="82" y="57">复杂拼单与优惠流程可编排</text>
+    </g>
+    <g transform="translate(0 172)">
+      <rect class="accent" x="0" y="0" width="58" height="58" rx="12"/>
+      <path class="line" d="M12 44 C22 14 39 14 48 44 M18 44 h24"/>
+      <text class="txt" x="82" y="27">FutureTask + 线程池</text>
+      <text class="small" x="82" y="57">并行加载数据，降低接口耗时</text>
+    </g>
+    <g transform="translate(0 258)">
+      <rect class="pink" x="0" y="0" width="58" height="58" rx="12"/>
+      <path class="line" d="M13 18 h32 M13 30 h32 M13 42 h32"/>
+      <text class="txt" x="82" y="27">Redis Bitmap 标签</text>
+      <text class="small" x="82" y="57">人群可见性与参与次数精细控制</text>
+    </g>
+    <g transform="translate(0 344)">
+      <rect class="orange" x="0" y="0" width="58" height="58" rx="12"/>
+      <path class="line" d="M12 18 h30 v18 H22 M42 36 l-9 -9 M42 36 l-9 9"/>
+      <text class="txt" x="82" y="27">HTTP + MQ 双通道</text>
+      <text class="small" x="82" y="57">回调、补偿、幂等保障一致性</text>
+    </g>
+  </g>
+
+  <!-- Bottom: audience and modules -->
+  <rect class="box-soft" x="66" y="680" width="455" height="135"/>
+  <text x="105" y="725" class="h2">【适合场景】</text>
+  <circle class="white" cx="121" cy="770" r="29"/>
+  <path class="line" d="M111 770 q10 -18 22 0 M103 804 q26 -22 54 0"/>
+  <text class="txt" x="176" y="765">写字楼下午茶</text>
+  <text class="small" x="176" y="798">校园咖啡 / 园区团购 / 企业福利</text>
+
+  <rect class="box-soft" x="552" y="680" width="440" height="135"/>
+  <text x="594" y="725" class="h2">【模块】</text>
+  <rect class="pill" x="596" y="748" width="155" height="44"/><text class="code" x="616" y="777">group-buy</text>
+  <rect class="pill" x="770" y="748" width="112" height="44"/><text class="code" x="792" y="777">trade</text>
+  <rect class="pill" x="596" y="800" width="135" height="44"/><text class="code" x="618" y="829">trigger</text>
+  <rect class="pill" x="748" y="800" width="194" height="44"/><text class="code" x="768" y="829">infrastructure</text>
+
+  <rect class="box-soft" x="1030" y="830" width="500" height="48"/>
+  <text class="tiny" x="1072" y="860">核心目标：多人拼单、优惠计算、支付结算高并发可靠</text>
+
+  <!-- Decorative stars -->
+  <path class="line" d="M140 93 l14 30 l32 4 l-23 22 l6 32 l-29 -16 l-29 16 l6 -32 l-23 -22 l32 -4 z"/>
+  <path class="line" d="M1365 80 l12 25 l28 4 l-20 19 l5 28 l-25 -14 l-25 14 l5 -28 l-20 -19 l28 -4 z"/>
+  <path class="line" d="M1440 138 l8 18 l20 3 l-15 14 l4 20 l-17 -10 l-18 10 l4 -20 l-14 -14 l19 -3 z"/>
+</svg>
