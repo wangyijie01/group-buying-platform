@@ -29,14 +29,15 @@ public class GroupBuyNotifyJob {
     @Resource
     private RedissonClient redissonClient;
 
-    @Scheduled(cron = "0 0 0 * * ?")
+    /**
+     * 默认每分钟扫描一次，可通过配置覆盖，缩短通知失败后的恢复窗口。
+     */
+    @Scheduled(cron = "${group-buying.notify.cron}")
     public void exec() {
-        // 为什么加锁？分布式应用N台机器部署互备（一个应用实例挂了，还有另外可用的），任务调度会有N个同时执行，那么这里需要增加抢占机制，谁抢占到谁就执行。完毕后，下一轮继续抢占。
+        // 多实例只允许一个节点扫描任务；租约兜底进程异常，正常完成后主动释放。
         RLock lock = redissonClient.getLock("group_buy_market_notify_job_exec");
         try {
-            // waitTime：等待获取锁的最长时间
-            // leaseTime：租约时间，如果当前线程成功获取到锁，那么锁将被持有的时间长度。这个时间过后，锁会自动释放。续租时间可按照执行方法时间的耗时max来设置。如 50毫秒
-            boolean isLocked = lock.tryLock(3, 0, TimeUnit.SECONDS);
+            boolean isLocked = lock.tryLock(3, 5, TimeUnit.MINUTES);
             if (!isLocked) return;
 
             Map<String, Integer> result = tradeTaskService.execNotifyJob();

@@ -33,7 +33,7 @@ public class TimeoutRefundJob {
     /**
      * 每5分钟执行一次超时订单扫描
      */
-    @Scheduled(cron = "0 */1 * * * ?")
+    @Scheduled(cron = "${group-buying.timeout-refund.cron}")
     public void exec() {
         // 分布式锁，防止多实例重复执行
         RLock lock = redissonClient.getLock("group_buy_market_timeout_refund_job_exec");

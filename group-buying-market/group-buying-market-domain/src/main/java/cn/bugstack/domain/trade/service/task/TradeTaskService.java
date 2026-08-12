@@ -27,6 +27,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Service
 public class TradeTaskService implements ITradeTaskService {
 
+    private static final int MAX_NOTIFY_ATTEMPTS = 5;
+
     @Resource
     private ITradeRepository repository;
     @Resource
@@ -70,7 +72,8 @@ public class TradeTaskService implements ITradeTaskService {
                     successCount += 1;
                 }
             } else if (NotifyTaskHTTPEnumVO.ERROR.getCode().equals(response)) {
-                if (notifyTask.getNotifyCount() > 4) {
+                // notifyCount 记录已执行次数；当前失败也计入总次数，达到上限后转为终态。
+                if (notifyTask.getNotifyCount() + 1 >= MAX_NOTIFY_ATTEMPTS) {
                     int updateCount = repository.updateNotifyTaskStatusError(notifyTask);
                     if (1 == updateCount) {
                         errorCount += 1;

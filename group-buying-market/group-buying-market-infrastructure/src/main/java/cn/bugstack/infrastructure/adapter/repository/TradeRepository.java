@@ -355,6 +355,7 @@ public class TradeRepository implements ITradeRepository {
         NotifyTask notifyTask = NotifyTask.builder()
                 .teamId(notifyTaskEntity.getTeamId())
                 .uuid(notifyTaskEntity.getUuid())
+                .notifyCount(notifyTaskEntity.getNotifyCount())
                 .build();
         return notifyTaskDao.updateNotifyTaskStatusSuccess(notifyTask);
     }
@@ -364,6 +365,7 @@ public class TradeRepository implements ITradeRepository {
         NotifyTask notifyTask = NotifyTask.builder()
                 .teamId(notifyTaskEntity.getTeamId())
                 .uuid(notifyTaskEntity.getUuid())
+                .notifyCount(notifyTaskEntity.getNotifyCount())
                 .build();
         return notifyTaskDao.updateNotifyTaskStatusError(notifyTask);
     }
@@ -373,6 +375,7 @@ public class TradeRepository implements ITradeRepository {
         NotifyTask notifyTask = NotifyTask.builder()
                 .teamId(notifyTaskEntity.getTeamId())
                 .uuid(notifyTaskEntity.getUuid())
+                .notifyCount(notifyTaskEntity.getNotifyCount())
                 .build();
         return notifyTaskDao.updateNotifyTaskStatusRetry(notifyTask);
     }
@@ -613,8 +616,8 @@ public class TradeRepository implements ITradeRepository {
         // 使用orderId作为锁的key，避免同一订单重复恢复库存
         String lockKey = "refund_lock_" + orderId;
 
-        // 尝试获取分布式锁，防止重复操作 30天过期
-        Boolean lockAcquired = redisService.setNx(lockKey, 30 * 24 * 60 * 60 * 1000L, TimeUnit.MINUTES);
+        // 幂等标记保留 30 天。过期值与 TimeUnit 必须使用同一量纲，避免把毫秒数误当成分钟数。
+        Boolean lockAcquired = redisService.setNx(lockKey, 30, TimeUnit.DAYS);
 
         if (!lockAcquired) {
             log.warn("订单 {} 恢复库存操作已在进行中，跳过重复操作", orderId);
