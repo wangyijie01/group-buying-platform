@@ -4,10 +4,6 @@ import cn.bugstack.domain.trade.model.valobj.TeamRefundSuccess;
 import cn.bugstack.domain.trade.service.ITradeRefundOrderService;
 import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.core.ExchangeTypes;
-import org.springframework.amqp.rabbit.annotation.Exchange;
-import org.springframework.amqp.rabbit.annotation.Queue;
-import org.springframework.amqp.rabbit.annotation.QueueBinding;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
@@ -32,13 +28,7 @@ public class RefundSuccessTopicListener {
      * 2. MQ 消息消费，恢复锁单量库存。库存时添加分布式锁，确保不会重复操作。
      * 3. MQ 消息重试，确保在失败情况下，可以重复消息，又因为有分布式锁的处理，可以确保重复消费也不会重复添加锁单量库粗。
      */
-    @RabbitListener(
-            bindings = @QueueBinding(
-                    value = @Queue(value = "${spring.rabbitmq.config.producer.topic_team_refund.queue}"),
-                    exchange = @Exchange(value = "${spring.rabbitmq.config.producer.exchange}", type = ExchangeTypes.TOPIC),
-                    key = "${spring.rabbitmq.config.producer.topic_team_refund.routing_key}"
-            )
-    )
+    @RabbitListener(queues = "${spring.rabbitmq.config.producer.topic_team_refund.queue}")
     public void listener(String message) {
         log.info("接收消息（退单成功）- 恢复拼团队伍锁单量:{}", message);
         TeamRefundSuccess teamRefundSuccess = JSON.parseObject(message, TeamRefundSuccess.class);

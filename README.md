@@ -4,71 +4,74 @@
 
 ### 社区生鲜拼团营销交易系统
 
-一套覆盖 **优惠试算、组队锁单、支付结算、成团通知与退款补偿** 的 DDD 双微服务项目。
+一套覆盖 **优惠试算、组队锁单、支付结算、成团履约与退款补偿** 的 DDD 双微服务项目。
 
+[![Backend CI](https://github.com/wangyijie01/group-buying-platform/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/wangyijie01/group-buying-platform/actions/workflows/backend-ci.yml)
 [![Java](https://img.shields.io/badge/Java-8-E76F00?logo=openjdk&logoColor=white)](#技术栈)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-2.7.12-6DB33F?logo=springboot&logoColor=white)](#技术栈)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-2.7.18-6DB33F?logo=springboot&logoColor=white)](#技术栈)
 [![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white)](#技术栈)
-[![Redis](https://img.shields.io/badge/Redis-6.x-DC382D?logo=redis&logoColor=white)](#技术栈)
+[![Redis](https://img.shields.io/badge/Redis-7.x-DC382D?logo=redis&logoColor=white)](#技术栈)
 [![RabbitMQ](https://img.shields.io/badge/RabbitMQ-3.x-FF6600?logo=rabbitmq&logoColor=white)](#技术栈)
-[![Architecture](https://img.shields.io/badge/Architecture-DDD-173D7A)](#架构设计)
+[![License](https://img.shields.io/badge/License-Apache--2.0-173D7A)](LICENSE)
 
-**[在线项目档案](https://wangyijie01.github.io/group-buying-platform/)** · [架构设计](#架构设计) · [核心设计](#核心设计) · [快速开始](#快速开始) · [项目贡献](#项目贡献与说明)
+**[在线项目档案](https://wangyijie01.github.io/group-buying-platform/)** · [架构设计](#架构设计) · [核心设计](#核心设计) · [快速开始](#快速开始) · [运维手册](docs/operations.md) · [测试说明](docs/testing.md)
 
 <img src="docs/og-light.png" alt="Community Group Buying Platform 浅色项目封面" width="880">
 
 </div>
 
 > [!NOTE]
-> 项目负责人：**王奕杰**，西北工业大学人工智能硕士在读，求职方向为 Java 后端开发 / Agent 工程。项目周期为 **2025.05 - 2025.08**。本仓库用于展示复杂交易业务建模、缓存并发控制与最终一致性实践，不包含生产凭据。
+> 项目负责人：**王奕杰**，西北工业大学人工智能硕士在读，求职方向为 Java 后端开发 / Agent 工程。项目周期为 **2025.05 - 2025.08**。本仓库用于展示复杂交易业务建模、并发控制与最终一致性实践，不包含生产凭据。
 
 ## 项目概览
 
-社区团购的难点并不止“多人凑单”，而是如何让营销资格、支付订单、队伍人数和退款状态在两个服务间可靠协同。本项目将系统拆为商城交易与拼团营销两个边界清晰的微服务：
+社区团购的难点不止是“多人凑单”，还包括营销资格、支付订单、队伍人数与退款状态在两个服务之间的可靠协同。项目按业务边界拆为：
 
 - `group-buying-trade`：商品下单、营销锁单、支付宝支付、支付回调、订单状态与退款执行。
-- `group-buying-market`：活动试算、人群过滤、开团参团、队伍结算、成团通知和逆向补偿。
+- `group-buying-market`：活动试算、人群过滤、开团参团、队伍结算、成团通知与逆向补偿。
 
-| 项目维度 | 实现方案 |
+| 项目维度 | 当前实现 |
 | --- | --- |
-| 业务范围 | 浏览试算 → 锁单 → 支付 → 结算 → 成团 → 履约 → 退款 |
+| 业务闭环 | 浏览试算 → 锁单 → 支付 → 结算 → 成团 → 履约 → 退款 |
 | 领域模型 | 活动、人群标签、拼团交易、商城订单、支付授权 |
-| 并发控制 | Redis 原子计数 + 分段锁键 + MySQL 条件更新兜底 |
-| 一致性 | 本地任务表 + RabbitMQ + 定时补偿 + 幂等状态机 |
-| 扩展机制 | 规则树、责任链、策略模式、DCC 动态配置 |
+| 并发控制 | Redis 原子计数 + 序号幂等键 + MySQL 条件更新兜底 |
+| 最终一致性 | 本地任务表 + RabbitMQ / HTTP + 定时补偿 + 幂等状态机 |
+| 消息可靠性 | 消费端 3 次退避重试 + 5 个业务队列的独立 `.dlq` |
+| 可观测性 | `X-Trace-Id`、Actuator 健康探针、Prometheus 指标 |
+| 工程验证 | 根聚合构建、15 个 Maven 模块、11 个自动化测试、GitHub Actions |
 
 ## 简历推荐写法
 
-- 基于规则树编排营销试算，将系统控制、活动与商品加载、优惠计算、人群标签过滤拆成独立节点；使用线程池并行加载活动与 SKU 数据，新增优惠类型时按策略扩展而不改动主流程。
-- 抽象锁单、结算、退款 3 条责任链，组合活动可用性、队伍名额、参与次数、外部单号及状态幂等校验；通过策略模式覆盖未支付、已支付未成团、已成团 3 类退款逆向流程。
-- 采用 Redis 原子计数与序号幂等键预占热点名额，MySQL 通过 `lock_count < target_count` 条件更新兜底；锁单落库失败时登记恢复量，避免超卖与缓存名额泄漏。
-- 将业务状态与通知任务在本地事务中一并落库，经 RabbitMQ / HTTP 投递；使用 Redisson 抢占、定时扫描、最多 5 次状态化重试及终态条件更新，保障成团通知与退款事件最终可收口。
-- 以标签明细表 + Redis Bitmap 完成人群标签离线沉淀与在线位判断；基于 DCC 注解和 Redis 发布订阅热更新降级、灰度与黑名单配置，无需重启服务。
+- 基于规则树编排营销试算，将系统控制、活动/SKU 加载、优惠计算与人群过滤拆为独立节点，并用线程池并行加载活动和商品数据，使新增优惠策略无需改动主流程。
+- 抽象锁单、结算、退款 3 条责任链，组合活动可用性、队伍名额、参与次数与状态幂等校验；采用 Redis 原子计数预占热点名额，并以 MySQL `lock_count < target_count` 条件更新兜底防超卖。
+- 将业务状态与通知任务在本地事务中一并落库，通过 RabbitMQ / HTTP 投递；配置消费端 3 次退避重试与独立死信队列，结合 Redisson 抢占、定时扫描和最多 5 次任务补偿，使成团与退款事件可追踪、可恢复。
+- 完成双服务工程化治理：外置数据库/Redis/RabbitMQ/支付配置，提供一键 Compose 基础环境、跨服务 `X-Trace-Id`、健康检查与 Prometheus 指标，并以 GitHub Actions 持续验证 15 个模块和 11 个自动化测试。
 
-> 简历中不建议使用“显著降低时延”“提升线上稳定性”等无法从仓库直接验证的结果词。当前版本只保留代码、表结构和状态流转能够支撑的事实；如后续补充压测报告，可再加入 P95/P99、吞吐量或数据库访问降幅。
+> 以上表述只使用代码、配置与测试可验证的事实。未提供压测报告前，不写“提升吞吐量”“降低 P99”等量化结论。
 
 ## 功能特性
 
-- **营销试算**：根据商品、渠道、活动和用户标签计算原价、优惠金额与实付价。
+- **营销试算**：根据商品、渠道、活动与用户标签计算原价、优惠金额和实付价。
 - **开团参团**：校验活动状态、参与次数与队伍名额，完成营销资格预占。
-- **人群运营**：标签定义、任务跑批、结果落库，并同步到 Redis Bitmap 做在线判断。
+- **人群运营**：标签定义、任务跑批、结果落库，并同步 Redis Bitmap 做在线位判断。
 - **支付闭环**：创建支付单、处理支付宝回调、主动查单并推进营销结算。
 - **可靠通知**：成团结果支持 HTTP / MQ 双通道，本地任务表记录重试状态。
-- **退款逆向**：区分未支付未成团、已支付未成团、已支付已成团三类策略。
-- **动态治理**：Redis 发布订阅刷新降级开关、灰度比例和黑名单等业务配置。
+- **退款逆向**：区分未支付、已支付未成团、已支付已成团三类策略。
+- **动态治理**：Redis 发布订阅刷新降级开关、灰度比例与黑名单配置。
 
 ## 架构设计
 
 ```mermaid
 flowchart LR
-    U[用户 / H5] --> T[商城交易服务<br/>group-buying-trade]
-    T -->|优惠试算 / 营销锁单| M[拼团营销服务<br/>group-buying-market]
+    U[用户 / H5] --> T[商城交易服务<br/>group-buying-trade :8070]
+    T -->|优惠试算 / 营销锁单| M[拼团营销服务<br/>group-buying-market :8091]
     T --> A[支付宝沙箱]
     A -->|支付回调| T
-    M -->|成团 HTTP / MQ| T
-    T -->|支付成功 / 退款事件| Q[(RabbitMQ)]
+    T -->|支付成功| Q[(RabbitMQ)]
     Q --> M
-    M --> R[(Redis)]
+    M -->|成团 / 退款事件| Q
+    Q --> T
+    M --> R[(Redis / Bitmap)]
     M --> MM[(MySQL · 营销库)]
     T --> TM[(MySQL · 商城库)]
 ```
@@ -77,7 +80,7 @@ flowchart LR
 
 ```text
 api             对外接口契约、DTO 与统一响应
-app             Spring Boot 入口、配置与资源文件
+app             Spring Boot 入口、配置与资源
 domain          聚合、实体、值对象、领域服务与仓储接口
 infrastructure  DAO、MyBatis、Redis、MQ 与外部网关实现
 trigger         HTTP Controller、Job、Listener
@@ -94,134 +97,141 @@ sequenceDiagram
     participant P as 支付渠道
     participant Q as RabbitMQ
 
-    U->>M: 查询商品拼团试算
+    U->>M: 查询拼团试算
     M-->>U: 优惠价、资格与队伍列表
     U->>T: 创建订单
     T->>M: 锁定营销资格
     M-->>T: 返回优惠与实付金额
     T->>P: 创建支付单
     P-->>T: 支付成功回调
-    T->>M: 结算拼团订单
+    T->>Q: 发布支付成功事件
+    Q->>M: 结算拼团订单
     M->>Q: 发布成团 / 退款事件
-    Q-->>T: 推进商城订单状态
+    Q->>T: 推进商城订单状态
 ```
-
-完整流程可拆为八个阶段：运营配置、首页试算、下单锁单、支付回调、拼团结算、成团履约、定时补偿、退款逆向。
 
 ## 核心设计
 
 ### 1. 规则树编排营销试算
 
-将系统开关、活动与商品加载、优惠计算、人群标签过滤拆成独立节点。活动数据和 SKU 数据使用线程池并行加载，新增营销规则时只需扩展节点或策略，无需重写主流程。
+系统开关、活动/SKU 加载、优惠计算与人群过滤分别落在独立节点。活动和 SKU 使用线程池并行加载；新增营销规则时扩展节点或策略，不重写主流程。
 
 ### 2. 责任链拆分交易校验
 
-锁单链依次处理活动可用性、队伍库存和用户参与次数；结算链校验外部订单、渠道来源与队伍状态；退款链先加载数据、执行幂等判断，再路由到对应逆向策略。
+锁单链处理活动可用性、队伍库存和参与次数；结算链校验外部订单、渠道来源与队伍状态；退款链完成数据加载、幂等判断与逆向策略路由。
 
 ### 3. Redis 与 MySQL 双层防超卖
 
-Redis 原子计数器负责热点名额的快速预占，分段锁键提供异常重复值兜底；数据库使用条件更新保证最终人数不越界。锁单落库失败时记录恢复量，避免缓存名额泄漏。
+Redis 原子计数器承担热点名额预占，序号幂等键拦截重复预占；数据库通过 `lock_count < target_count` 条件更新提供最终约束。锁单落库失败时登记恢复量，避免缓存名额泄漏。
 
-### 4. 本地任务表保障最终一致性
+### 4. 本地任务表与消息死信
 
-成团与退款先在本地事务中更新业务状态并写入 `notify_task`，再通过 HTTP 或 RabbitMQ 通知下游。失败任务由可配置的定时作业扫描，集群执行使用 Redisson 分布式锁避免重复调度；通知最多执行 5 次，状态更新只允许从待执行或重试态流转到下一状态，降低并发扫描下的重复推进风险。
+业务状态和 `notify_task` 在本地事务中一并落库，再通过 HTTP 或 RabbitMQ 通知下游。消费者失败后执行最多 3 次退避重试，仍失败则进入各自 `.dlq`；本地失败任务由 Redisson 锁保护的定时作业扫描，最多补偿 5 次，并通过条件更新限制状态迁移。
 
-### 5. Bitmap 支撑高频人群判断
+### 5. Bitmap 支撑人群判断
 
-标签任务将结果持久化到明细表，并同步到 Redis Bitmap。在线试算只执行位判断，减少对标签明细表的高频查询；活动标签控制可见性与参与资格，折扣标签控制定向优惠。
+标签任务将结果持久化到明细表并同步 Redis Bitmap。在线试算执行位判断；活动标签控制参与资格，折扣标签控制定向优惠。
 
 ### 6. DCC 动态配置
 
-通过注解、反射和 Redis 发布订阅，将降级开关、灰度比例、黑名单等配置映射到业务字段，实现无需重启的秒级刷新。
+通过注解、反射与 Redis 发布订阅，将降级、灰度和黑名单配置映射到业务字段，实现运行期刷新。
 
 ## 项目结构
 
 ```text
 group-buying-platform/
-├── group-buying-market/          # 拼团营销服务
-│   ├── group-buying-market-api
-│   ├── group-buying-market-app
-│   ├── group-buying-market-domain
-│   ├── group-buying-market-infrastructure
-│   ├── group-buying-market-trigger
-│   └── group-buying-market-types
-├── group-buying-trade/           # 商城支付交易服务
-│   ├── group-buying-trade-api
-│   ├── group-buying-trade-app
-│   ├── group-buying-trade-domain
-│   ├── group-buying-trade-infrastructure
-│   ├── group-buying-trade-trigger
-│   └── group-buying-trade-types
-├── docs/                          # GitHub Pages 项目档案
-├── .env.example                   # 环境变量清单
-└── NOTICE.md                      # 来源与贡献说明
+├── group-buying-market/          # 拼团营销服务（6 个子模块）
+├── group-buying-trade/           # 商城交易服务（6 个子模块）
+├── .github/workflows/            # 后端 CI 与 Pages 发布
+├── .mvn/                         # 项目级 Maven 参数与仓库配置
+├── compose.yaml                  # MySQL、Redis、RabbitMQ 基础环境
+├── docs/                         # 浅色项目档案与工程文档
+├── .env.example                  # 环境变量清单
+├── pom.xml                       # 双服务聚合构建入口
+└── NOTICE.md                     # 来源与贡献边界
 ```
 
 ## 技术栈
 
 | 类别 | 技术 |
 | --- | --- |
-| 后端 | Java 8、Spring Boot 2.7.12、MyBatis、Maven |
+| 后端 | Java 8、Spring Boot 2.7.18、Spring MVC、MyBatis、Maven |
 | 数据 | MySQL 8、Redis / Redisson、Redis Bitmap |
-| 消息 | RabbitMQ、Spring Event、HTTP 回调 |
+| 消息 | RabbitMQ、Spring Event、HTTP 回调、DLQ |
 | 架构 | DDD、聚合、仓储、防腐层、规则树、责任链、策略模式 |
-| 工程 | Docker Compose、Nginx、Prometheus、Grafana、ELK |
+| 工程 | Docker Compose、GitHub Actions、Actuator、Prometheus |
 
 ## 快速开始
 
 ### 环境要求
 
 - JDK 8+
-- Maven 3.8+
-- MySQL 8.0+
-- Redis 6.x+
-- RabbitMQ 3.x+
+- Maven 3.6+
+- Docker Desktop 与 Docker Compose v2
 
-### 1. 配置环境变量
+### 1. 准备本地配置
 
-参考 [.env.example](.env.example) 配置数据库、中间件、微信与支付宝沙箱参数。仓库内不保存任何真实密钥；未配置支付凭据时，外部支付测试会自动跳过。
-
-### 2. 初始化数据库
-
-分别创建营销库与商城交易库，并执行两个服务 `docs/dev-ops/mysql/sql` 下的初始化脚本。
-
-### 3. 构建服务
-
-```bash
-mvn -f group-buying-market/pom.xml clean package -DskipTests
-mvn -f group-buying-trade/pom.xml clean package -DskipTests
+```powershell
+Copy-Item .env.example .env
 ```
 
-### 4. 启动服务
+`.env` 已被 Git 忽略。支付默认关闭；需要联调支付宝沙箱时，再设置 `ALIPAY_ENABLED=true` 并填入沙箱凭据。
+
+### 2. 启动基础设施
 
 ```bash
-# 拼团营销服务，默认端口 8091
-mvn -f group-buying-market/pom.xml -pl group-buying-market-app -am spring-boot:run -Dspring-boot.run.profiles=dev
+docker compose up -d
+```
 
-# 商城交易服务，默认端口 8070
+首次启动会自动创建并初始化两个 MySQL 数据库，同时启动 Redis 与带管理台的 RabbitMQ。更完整的检查、死信处理与故障排查见 [运维手册](docs/operations.md)。
+
+### 3. 构建并运行测试
+
+```bash
+mvn -B -ntp verify
+```
+
+该命令从根目录验证 15 个 Maven 模块和 11 个自动化测试。测试范围和历史集成测试说明见 [测试说明](docs/testing.md)。
+
+### 4. 启动两个服务
+
+```bash
+mvn -f group-buying-market/pom.xml -pl group-buying-market-app -am spring-boot:run -Dspring-boot.run.profiles=dev
 mvn -f group-buying-trade/pom.xml -pl group-buying-trade-app -am spring-boot:run -Dspring-boot.run.profiles=dev
 ```
+
+默认端口：营销服务 `8091`，交易服务 `8070`。健康检查分别位于 `/actuator/health`，Prometheus 指标位于 `/actuator/prometheus`。
+
+## 工程保障
+
+- **配置安全**：数据库、中间件、回调地址和支付凭据全部支持环境变量覆盖；仓库只保留示例值。
+- **持续集成**：后端代码或 POM 变化时，GitHub Actions 在 Java 8 下分别验证两个服务。
+- **依赖维护**：Dependabot 每月检查两个 Maven 工程和 GitHub Actions。
+- **运行诊断**：响应返回 `X-Trace-Id`；只公开 `health`、`info`、`prometheus` 三类 Actuator 端点。
+- **消息恢复**：每个业务队列都绑定专用 DLQ；处置步骤记录在 [运维手册](docs/operations.md#死信队列处理)。
+- **协作规范**：漏洞报告见 [SECURITY.md](SECURITY.md)，本地贡献流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## 项目贡献与说明
 
 王奕杰在本作品集版本中完成：
 
-- 整合商城交易与拼团营销两个微服务，补齐最新交易、结算和退款链路。
-- 统一 185 处 Java 文件署名说明，将 164 处非标准 Javadoc 标签规范化。
-- 重写关键领域注释，覆盖规则树、责任链、库存预占、补偿和退款状态机。
-- 修复退款库存恢复幂等键的 TTL 单位，统一超时退单周期，并完善通知任务的锁租约、重试上限和状态条件更新。
-- 清理公开配置中的敏感凭据，改为环境变量，并增加支付测试跳过机制。
-- 重写 README、项目档案页与 GitHub Pages 自动发布流程。
+- 整合商城交易与拼团营销双微服务，补齐交易、结算和退款链路。
+- 统一源码署名与 Javadoc，重写规则树、库存、补偿和退款关键注释。
+- 修复退款幂等 TTL、补偿锁租约与调度周期，收紧通知任务状态流转。
+- 增加消息重试 / DLQ、批任务故障隔离、跨服务 Trace ID、健康检查和指标端点。
+- 外置运行配置，提供统一 Compose 基础环境、根聚合构建、自动化测试与后端 CI。
+- 重写 README、工程文档、简历 bullet 和浅色 GitHub Pages 项目档案。
 
-本项目在既有教学工程基础上完成学习、整合与工程化维护，原始实现与当前维护范围见 [NOTICE.md](NOTICE.md)。请在面试或二次传播时如实说明贡献边界。
+本项目在既有教学工程基础上完成学习、整合与工程化维护，原始实现与当前维护范围见 [NOTICE.md](NOTICE.md)。面试或二次传播时请如实说明贡献边界。
 
 ## Roadmap
 
 - [ ] 使用 Testcontainers 覆盖 MySQL、Redis 与 RabbitMQ 集成测试
 - [ ] 增加接口幂等令牌与热点活动限流
-- [ ] 接入 OpenTelemetry，补充端到端链路追踪
-- [ ] 为通知任务增加死信队列与人工补偿后台
+- [ ] 接入 OpenTelemetry，补充跨进程 Trace 上下文传播
+- [ ] 提供 DLQ 可视化查询与受控重放后台
 - [ ] 补齐 OpenAPI / Knife4j 接口文档
+- [ ] 评估 Java 17 + Spring Boot 3 的独立迁移分支
 
 ---
 

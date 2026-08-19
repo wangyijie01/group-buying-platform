@@ -2,7 +2,7 @@ spring:
   config:
     name: group-buying-market-app
   profiles:
-    active: dev
+    active: ${SPRING_PROFILES_ACTIVE:dev}
 
 # 补偿任务允许在不同环境按流量与下游承载能力调整扫描频率。
 group-buying:

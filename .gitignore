@@ -30,6 +30,7 @@ Thumbs.db
 
 # Local config and secrets
 .env
+.mvn/repository/
 *.key
 *.pem
 application-local.yml

@@ -1,0 +1,48 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "pom.xml"
+      - "group-buying-market/**"
+      - "group-buying-trade/**"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    paths:
+      - "pom.xml"
+      - "group-buying-market/**"
+      - "group-buying-trade/**"
+      - ".github/workflows/backend-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: market
+            pom: group-buying-market/pom.xml
+          - service: trade
+            pom: group-buying-trade/pom.xml
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Java 8
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "8"
+          cache: maven
+      - name: Compile and test
+        run: mvn -B -ntp -f "${{ matrix.pom }}" clean verify

@@ -52,13 +52,16 @@ public class TradePort implements ITradePort {
                         publisher.publish(notifyTask.getNotifyMQ(), notifyTask.getParameterJson());
                         return NotifyTaskHTTPEnumVO.SUCCESS.getCode();
                     }
+
+                    // 未知通知类型属于数据配置错误，需要进入重试/终止流程，不能伪装成锁竞争。
+                    return NotifyTaskHTTPEnumVO.ERROR.getCode();
                 } finally {
                     if (lock.isLocked() && lock.isHeldByCurrentThread()) {
                         lock.unlock();
                     }
                 }
             }
-            return NotifyTaskHTTPEnumVO.NULL.getCode();
+            return NotifyTaskHTTPEnumVO.DEFERRED.getCode();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return NotifyTaskHTTPEnumVO.ERROR.getCode();

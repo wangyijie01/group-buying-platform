@@ -4,7 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f7f9fc">
-  <meta name="description" content="王奕杰的社区生鲜拼团营销交易系统项目档案：DDD、规则树、责任链、Redis、RabbitMQ 与最终一致性。">
+  <meta name="color-scheme" content="light only">
+  <meta name="description" content="王奕杰的社区生鲜拼团营销交易系统项目档案：DDD、并发库存、可靠消息、自动化测试与可观测性。">
   <meta property="og:title" content="社区生鲜拼团营销交易系统 · 王奕杰">
   <meta property="og:description" content="从优惠试算到退款补偿，完整拆解双微服务交易闭环。">
   <meta property="og:type" content="website">
@@ -13,6 +14,7 @@
   <title>社区生鲜拼团营销交易系统 · 王奕杰</title>
   <style>
     :root {
+      color-scheme: light only;
       --navy-950: #10243e;
       --navy-900: #173250;
       --navy-800: #245078;
@@ -271,7 +273,7 @@
       <div>
         <p class="eyebrow">System case study // 2025.05—2025.08</p>
         <h1>社区生鲜<br><span>拼团营销</span>交易系统</h1>
-        <p class="hero-lead">围绕“看见优惠 → 锁定名额 → 支付结算 → 成团履约 → 退款逆向”，用 DDD、规则树、责任链与可靠消息搭建完整交易闭环。</p>
+        <p class="hero-lead">围绕“看见优惠 → 锁定名额 → 支付结算 → 成团履约 → 退款逆向”，用 DDD、并发控制与可恢复消息搭建可构建、可测试、可观测的交易闭环。</p>
         <div class="hero-actions">
           <a class="button button-primary" href="#architecture">查看系统拆解 ↓</a>
           <a class="button button-secondary" href="https://github.com/wangyijie01/group-buying-platform">浏览源代码 ↗</a>
@@ -295,10 +297,10 @@
 
   <div class="metric-strip" aria-label="项目摘要">
     <div class="metrics">
-      <div class="metric"><strong>02</strong><span>边界清晰的业务微服务</span></div>
-      <div class="metric"><strong>08</strong><span>从运营配置到退款的阶段</span></div>
-      <div class="metric"><strong>03</strong><span>退款逆向策略组合</span></div>
-      <div class="metric"><strong>185</strong><span>处源码署名与注释规范化</span></div>
+      <div class="metric"><strong>15</strong><span>Maven 模块统一聚合构建</span></div>
+      <div class="metric"><strong>11</strong><span>自动化测试持续验证</span></div>
+      <div class="metric"><strong>3×</strong><span>消费失败退避重试上限</span></div>
+      <div class="metric"><strong>5×</strong><span>本地通知任务补偿上限</span></div>
     </div>
   </div>
 
@@ -306,7 +308,7 @@
     <section class="section reveal" id="architecture">
       <div class="section-head">
         <div class="section-kicker">01 / Architecture</div>
-        <div><h2>两个领域边界，<br>一条交易主线。</h2><p class="section-intro">商城服务维护支付主订单；拼团服务维护营销资格、队伍人数与通知任务。同步调用保证主链路反馈，异步事件负责跨服务状态追平。</p></div>
+        <div><h2>两个领域边界，<br>一条交易主线。</h2><p class="section-intro">商城服务维护支付主订单；拼团服务维护营销资格、队伍人数与通知任务。同步调用保证主链路反馈，异步事件和补偿任务负责跨服务状态追平。</p></div>
       </div>
 
       <div class="architecture">
@@ -354,7 +356,7 @@
         <article class="decision" data-index="02"><span class="decision-tag">CHAIN</span><h3>责任链守住交易入口</h3><p>锁单、结算和退款分别维护独立校验链；新增规则只扩展过滤器，不让核心服务退化为大型 if-else。</p></article>
         <article class="decision" data-index="03"><span class="decision-tag">ATOMIC + CAS</span><h3>缓存拦截，数据库兜底</h3><p>Redis 原子计数承担热点预占，分段幂等键处理重复序号，MySQL 条件更新提供最终人数约束。</p></article>
         <article class="decision" data-index="04"><span class="decision-tag">BITMAP</span><h3>标签在线判断 O(1)</h3><p>离线任务产出用户标签，结果落明细表并同步 Bitmap；活动级标签控制资格，折扣级标签控制差异化优惠。</p></article>
-        <article class="decision" data-index="05"><span class="decision-tag">OUTBOX-LIKE</span><h3>本地任务表保存失败现场</h3><p>业务状态与通知任务在本地事务中一起落库；下游不可用时保留重试证据，不依赖一次 HTTP 或 MQ 必须成功。</p></article>
+        <article class="decision" data-index="05"><span class="decision-tag">OUTBOX-LIKE + DLQ</span><h3>两级恢复保存失败现场</h3><p>业务状态与通知任务在本地事务中一起落库；消费异常经 3 次退避重试后进入独立 DLQ，本地任务最多补偿 5 次。</p></article>
         <article class="decision" data-index="06"><span class="decision-tag">DCC</span><h3>配置变更无需重新发版</h3><p>注解标记业务字段，Redis 发布订阅广播变更，反射更新降级、灰度和黑名单参数。</p></article>
       </div>
     </section>
@@ -365,8 +367,9 @@
         <div class="reliability-flow">
           <div class="flow-item"><span class="flow-number">1</span><span>本地事务更新队伍 / 订单状态，同时写入通知任务。</span></div>
           <div class="flow-item"><span class="flow-number">2</span><span>HTTP 或 RabbitMQ 推动下游处理，消费者按业务键幂等。</span></div>
-          <div class="flow-item"><span class="flow-number">3</span><span>失败任务进入重试态，每分钟扫描，最多执行 5 次。</span></div>
-          <div class="flow-item"><span class="flow-number">4</span><span>Redisson 锁约束多实例抢占，条件更新阻止终态被重复推进。</span></div>
+          <div class="flow-item"><span class="flow-number">3</span><span>消费失败执行 3 次退避重试，超过上限进入对应 .dlq。</span></div>
+          <div class="flow-item"><span class="flow-number">4</span><span>本地失败任务定时扫描并最多补偿 5 次；Redisson 锁约束多实例抢占。</span></div>
+          <div class="flow-item"><span class="flow-number">5</span><span>X-Trace-Id、健康探针和 Prometheus 指标保留运行诊断入口。</span></div>
         </div>
       </div>
     </section>
@@ -377,21 +380,20 @@
         <div><h2>一套 Java 交易系统的<br>完整工程切面。</h2><p class="section-intro">不仅展示框架调用，也覆盖领域建模、并发控制、外部支付、异步消息与运行期治理。</p></div>
       </div>
       <div class="chips" aria-label="技术栈">
-        <span class="chip">Java 8</span><span class="chip">Spring Boot 2.7</span><span class="chip">MyBatis</span><span class="chip">Maven</span><span class="chip">DDD</span><span class="chip">MySQL 8</span><span class="chip">Redis</span><span class="chip">Redisson</span><span class="chip">RabbitMQ</span><span class="chip">FutureTask</span><span class="chip">Alipay SDK</span><span class="chip">Docker Compose</span><span class="chip">Prometheus</span><span class="chip">Grafana</span><span class="chip">ELK</span>
+        <span class="chip">Java 8</span><span class="chip">Spring Boot 2.7.18</span><span class="chip">MyBatis</span><span class="chip">Maven</span><span class="chip">DDD</span><span class="chip">MySQL 8</span><span class="chip">Redis</span><span class="chip">Redisson</span><span class="chip">RabbitMQ / DLQ</span><span class="chip">FutureTask</span><span class="chip">Alipay SDK</span><span class="chip">Docker Compose</span><span class="chip">GitHub Actions</span><span class="chip">Actuator</span><span class="chip">Prometheus</span>
       </div>
     </section>
 
     <section class="section reveal" id="resume">
       <div class="section-head">
         <div class="section-kicker">06 / Resume bullets</div>
-        <div><h2>每一条简历描述，<br>都能落到代码。</h2><p class="section-intro">按 Java 后端岗位重新组织主线：先讲领域拆分与业务闭环，再讲可扩展编排、并发控制、最终一致性和在线治理。</p></div>
+        <div><h2>每一条简历描述，<br>都能落到代码。</h2><p class="section-intro">按 Java 后端岗位重新组织主线：用 4 条 bullet 分别证明可扩展编排、并发约束、最终一致性和工程治理。</p></div>
       </div>
       <ol class="resume-list">
-        <li>基于规则树编排营销试算，将系统控制、活动与商品加载、优惠计算、人群标签过滤拆成独立节点；使用线程池并行加载活动与 SKU 数据，新增优惠类型时按策略扩展而不改动主流程。</li>
-        <li>抽象锁单、结算、退款 3 条责任链，组合活动可用性、队伍名额、参与次数、外部单号及状态幂等校验；通过策略模式覆盖未支付、已支付未成团、已成团 3 类退款逆向流程。</li>
-        <li>采用 Redis 原子计数与序号幂等键预占热点名额，MySQL 通过 <code>lock_count &lt; target_count</code> 条件更新兜底；锁单落库失败时登记恢复量，避免超卖与缓存名额泄漏。</li>
-        <li>将业务状态与通知任务在本地事务中一并落库，经 RabbitMQ / HTTP 投递；使用 Redisson 抢占、定时扫描、最多 5 次状态化重试及终态条件更新，保障成团通知与退款事件最终可收口。</li>
-        <li>以标签明细表 + Redis Bitmap 完成人群标签离线沉淀与在线位判断；基于 DCC 注解和 Redis 发布订阅热更新降级、灰度与黑名单配置，无需重启服务。</li>
+        <li>基于规则树编排营销试算，将系统控制、活动/SKU 加载、优惠计算与人群过滤拆为独立节点，并用线程池并行加载活动和商品数据，使新增优惠策略无需改动主流程。</li>
+        <li>抽象锁单、结算、退款 3 条责任链，组合活动可用性、队伍名额、参与次数与状态幂等校验；采用 Redis 原子计数预占热点名额，并以 MySQL <code>lock_count &lt; target_count</code> 条件更新兜底防超卖。</li>
+        <li>将业务状态与通知任务在本地事务中一并落库，通过 RabbitMQ / HTTP 投递；配置消费端 3 次退避重试与独立死信队列，结合 Redisson 抢占、定时扫描和最多 5 次任务补偿，使成团与退款事件可追踪、可恢复。</li>
+        <li>完成双服务工程化治理：外置数据库/Redis/RabbitMQ/支付配置，提供一键 Compose 基础环境、跨服务 <code>X-Trace-Id</code>、健康检查与 Prometheus 指标，并以 GitHub Actions 持续验证 15 个模块和 11 个自动化测试。</li>
       </ol>
       <div class="resume-note">表述原则：不写未经压测验证的“显著降时延/提升吞吐”，优先写清业务约束、技术动作和可检查的系统结果。</div>
     </section>
@@ -404,7 +406,7 @@
       <div class="contribution">
         <div class="contribution-profile"><div class="avatar">WYJ</div><h3>王奕杰</h3><p>西北工业大学 · 人工智能硕士<br>Java 后端 / Agent 工程方向</p></div>
         <div class="contribution-list">
-          <ul><li>整合商城交易与拼团营销双微服务，补齐最新交易、结算和退款代码。</li><li>统一源码署名与 Javadoc，重写规则树、库存、补偿和退款关键注释。</li><li>修复退款幂等 TTL、补偿锁租约和调度周期，收紧通知任务状态流转。</li><li>清理明文凭据，改用环境变量，并让外部支付测试在缺少配置时安全跳过。</li><li>重写项目说明、简历 bullet、架构图与浅色 GitHub Pages 项目档案。</li></ul>
+          <ul><li>整合商城交易与拼团营销双微服务，补齐交易、结算和退款代码。</li><li>统一源码署名与 Javadoc，重写规则树、库存、补偿和退款关键注释。</li><li>增加消息重试 / DLQ、批任务故障隔离、Trace ID、健康探针与指标端点。</li><li>外置运行配置，提供统一 Compose、根聚合构建、11 个自动化测试和后端 CI。</li><li>重写项目说明、简历 bullet、工程文档与浅色 GitHub Pages 项目档案。</li></ul>
           <div class="notice">核心工程源自既有教学项目，本版本保留原始实现者信息，并明确标注业务梳理、注释维护与作品集工程化范围。</div>
         </div>
       </div>
@@ -412,7 +414,7 @@
   </main>
 
   <footer>
-    <div class="footer-inner"><span>© <span id="year">2026</span> 王奕杰 · Project Case Study</span><span><a href="https://github.com/wangyijie01/group-buying-platform">Source</a> · <a href="https://github.com/wangyijie01/group-buying-platform/blob/main/NOTICE.md">Notice</a></span></div>
+    <div class="footer-inner"><span>© <span id="year">2026</span> 王奕杰 · Project Case Study</span><span><a href="https://github.com/wangyijie01/group-buying-platform">Source</a> · <a href="https://github.com/wangyijie01/group-buying-platform/blob/main/docs/operations.md">Runbook</a> · <a href="https://github.com/wangyijie01/group-buying-platform/blob/main/NOTICE.md">Notice</a></span></div>
   </footer>
 
   <script>

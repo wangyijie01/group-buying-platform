@@ -14,6 +14,9 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.UUID;
 
+/**
+ * 为入口请求生成或透传可控长度的链路标识，并在响应头与日志 MDC 中保持一致。
+ */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class TraceIdFilter extends OncePerRequestFilter {
@@ -22,15 +25,14 @@ public class TraceIdFilter extends OncePerRequestFilter {
     static final String TRACE_ID_MDC_KEY = "trace-id";
 
     @Override
-    protected void doFilterInternal(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response,
+                                    FilterChain filterChain) throws ServletException, IOException {
         try {
             String traceId = resolveTraceId(request.getHeader(TRACE_ID_HEADER));
             MDC.put(TRACE_ID_MDC_KEY, traceId);
             response.setHeader(TRACE_ID_HEADER, traceId);
             filterChain.doFilter(request, response);
         } finally {
-            // 只移除本过滤器写入的键，避免清空同一线程上的其他诊断上下文。
             MDC.remove(TRACE_ID_MDC_KEY);
         }
     }
@@ -41,5 +43,4 @@ public class TraceIdFilter extends OncePerRequestFilter {
         }
         return UUID.randomUUID().toString().replace("-", "");
     }
-
 }

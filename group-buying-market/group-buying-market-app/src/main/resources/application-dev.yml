@@ -1,5 +1,5 @@
 server:
-  port: 8091
+  port: ${MARKET_SERVER_PORT:8091}
   # 1核2G内存，可默认配置 200；4核8G内存【accept-count=1000、max-threads=800、max-connections=10000】，线程数经验值800。线程池过大，cpu调度会消耗大量时间
   tomcat:
     mbeanregistry:
@@ -25,9 +25,9 @@ thread:
 # 数据库配置；启动时配置数据库资源信息
 spring:
   datasource:
-    username: root
+    username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:change-me}
-    url: jdbc:mysql://127.0.0.1:3306/group_buy_market?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&useSSL=true&sessionVariables=sql_mode='NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES'
+    url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:13306}/${MARKET_DB_NAME:group_buy_market}?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&sessionVariables=sql_mode='NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES'
     driver-class-name: com.mysql.cj.jdbc.Driver
     type: com.zaxxer.hikari.HikariDataSource
     hikari:
@@ -41,17 +41,28 @@ spring:
       connection-test-query: SELECT 1
   # RabbitMQ
   rabbitmq:
-    addresses: 192.168.1.108
-    port: 15672
-    username: admin
+    host: ${RABBITMQ_HOST:127.0.0.1}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:admin}
     password: ${RABBITMQ_PASSWORD:guest}
+    publisher-confirm-type: correlated
+    publisher-returns: true
     listener:
       simple:
-        prefetch: 1 # 每次投递n个消息，消费完在投递n个
+        prefetch: ${RABBITMQ_PREFETCH:10}
+        default-requeue-rejected: false
+        retry:
+          enabled: true
+          initial-interval: 1s
+          multiplier: 2
+          max-attempts: 3
+          max-interval: 10s
     template:
-      delivery-mode: persistent # 确保全局默认设置为持久化（可选）
+      mandatory: true
     # 消息配置
     config:
+      dead-letter:
+        exchange: group_buy_market_dlx
       # 生产者
       producer:
         # 绑定交换机，统一一套交换机
@@ -77,8 +88,8 @@ mybatis:
 redis:
   sdk:
     config:
-      host: 192.168.1.108
-      port: 16379
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:16379}
       pool-size: 10
       min-idle-size: 5
       idle-timeout: 30000
@@ -94,8 +105,8 @@ xfg:
     config:
       system: group-buying-market
       register:
-        host: 192.168.1.108
-        port: 16379
+        host: ${REDIS_HOST:127.0.0.1}
+        port: ${REDIS_PORT:16379}
 
 # 日志；logstash部署的服务器IP
 logstash:
@@ -106,16 +117,24 @@ management:
   endpoints:
     web:
       exposure:
-        include: "*" # 暴露所有端点，包括自定义端点
+        include: health,info,prometheus
   endpoint:
     health:
-      show-details: always # 显示详细的健康检查信息
+      show-details: never
+      probes:
+        enabled: true
   metrics:
     export:
       prometheus:
         enabled: true # 启用Prometheus
-  prometheus:
-    enabled: true # 启用Prometheus端点
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: group-buying-market
+    description: 社区生鲜拼团营销服务
 
 # 日志
 logging:
