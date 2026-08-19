@@ -75,7 +75,7 @@
         <dependency>
             <groupId>com.squareup.retrofit2</groupId>
             <artifactId>converter-gson</artifactId>
-            <version>2.9.0</version>
+            <version>3.0.0</version>
         </dependency>
 
         <!-- HTTP 客户端：承载跨服务调用与回调通知。 -->
